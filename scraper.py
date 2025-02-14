@@ -1,12 +1,16 @@
 import os
+import re
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
-def download_images(base_url, output_folder):
-    """Descarga todas las imágenes de una página web y las guarda en una carpeta."""
+def download_images(base_url, output_folder, regex_pattern):
+    """Descarga todas las imágenes de una página web que coincidan con una expresión regular y las guarda en una carpeta."""
     # Crear la carpeta de salida si no existe
     os.makedirs(output_folder, exist_ok=True)
+    
+    # Compilar la expresión regular
+    pattern = re.compile(regex_pattern)
     
     # Obtener el contenido de la página
     response = requests.get(base_url)
@@ -29,6 +33,10 @@ def download_images(base_url, output_folder):
         # Obtener el nombre del archivo
         img_name = os.path.basename(img_url)
         
+        # Filtrar por expresión regular
+        if not pattern.match(img_name):
+            continue
+        
         # Descargar la imagen
         img_data = requests.get(img_url).content
         
@@ -39,6 +47,7 @@ def download_images(base_url, output_folder):
             print(f"Descargada: {img_name}")
 
 # Uso del script
-url = "http://page.com/"  # Reemplaza con la URL real
+url = ""  # Reemplaza con la URL real
 carpeta_destino = "imagenes_descargadas"
-download_images(url, carpeta_destino)
+regex_filtro = r"^p\d{1,4}\.png$"  # Expresión regular para imágenes que empiezan con 'p', siguen con hasta 4 dígitos y terminan en .png
+download_images(url, carpeta_destino, regex_filtro)
