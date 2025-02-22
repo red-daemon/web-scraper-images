@@ -80,5 +80,5 @@ Para el formato basado en páginas individuales:
 - El script reemplaza caracteres inválidos en los nombres de archivos y carpetas.
 
 ## Licencia
-Este proyecto está bajo la licencia MIT.
+Este proyecto está bajo la licencia GNU General Public License v3.0
 
