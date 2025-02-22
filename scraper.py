@@ -1,10 +1,14 @@
 import os
-import re
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
+from aux_methods import *
 
-def download_images(base_url, folder, output_base, regex_pattern):
+def sanitize_filename(filename):
+    """Elimina caracteres inválidos para nombres de archivos y carpetas en Windows y otros sistemas operativos."""
+    return re.sub(r'[<>:"/\\|?*]', '_', filename)
+
+def download_images(base_url, folder, output_base):
     """Descarga imágenes desde una página de archivos, organizándolas en carpetas por capítulos."""
     # Crear la carpeta base de salida
     output_folder = os.path.join(output_base, folder)
@@ -22,9 +26,6 @@ def download_images(base_url, folder, output_base, regex_pattern):
     # Analizar el HTML
     soup = BeautifulSoup(response.text, 'html.parser')
     
-    # Compilar la expresión regular
-    pattern = re.compile(regex_pattern)
-    
     # Buscar la sección de contenido principal
     content_section = soup.find(class_="entry-content")
     if not content_section:
@@ -39,17 +40,19 @@ def download_images(base_url, folder, output_base, regex_pattern):
         if not chapter_title_tag:
             continue
         
-        chapter_title = chapter_title_tag.text.strip()
+        chapter_title = sanitize_filename(chapter_title_tag.text.strip())
         chapter_folder = os.path.join(output_folder, chapter_title)
         os.makedirs(chapter_folder, exist_ok=True)
         
-        # Buscar imágenes dentro del capítulo
-        image_list = chapter.find(class_="comic-archive-list-wrap")
-        if not image_list:
+        archive_list = chapter.find(class_="comic-archive-list-wrap")
+        if not archive_list:
             continue
+
+        # Buscar imágenes dentro del capítulo
+        image_containers = chapter.find_all(class_=lambda x: x and x.startswith("comic-list"))
         
-        for entry in image_list.find_all('li'):
-            title_tag = entry.find(class_="comic-archive-title")
+        for image_container in image_containers:
+            title_tag = image_container.find(class_="comic-archive-title")
             if not title_tag:
                 continue
             
@@ -67,7 +70,7 @@ def download_images(base_url, folder, output_base, regex_pattern):
                 continue
             
             image_soup = BeautifulSoup(image_page_response.text, 'html.parser')
-            image_container = image_soup.find(class_="comic")
+            image_container = image_soup.find(class_="comic-table")
             if not image_container:
                 print("No se encontró la imagen en la página.")
                 continue
@@ -78,11 +81,7 @@ def download_images(base_url, folder, output_base, regex_pattern):
                 continue
             
             img_url = urljoin(image_page_url, img_tag['src'])
-            img_name = os.path.basename(img_url)
-            
-            # Filtrar por expresión regular
-            if not pattern.match(img_name):
-                continue
+            img_name = sanitize_filename(os.path.basename(img_url))
             
             # Descargar la imagen
             img_data = requests.get(img_url).content
@@ -94,8 +93,9 @@ def download_images(base_url, folder, output_base, regex_pattern):
                 print(f"Descargada: {img_name} en {chapter_title}")
 
 # Uso del script
-url = ""  # Reemplaza con la URL real
-folder = "archive"
+url = "example.com"  # Reemplaza con la URL real
 carpeta_destino = "descargas"
-regex_filtro = r"^p\d{1,4}\.png$"  # Expresión regular para imágenes que cumplen el criterio
-download_images(url, folder, carpeta_destino, regex_filtro)
+folders = "archive-book-"
+for f in range(8,11):
+    folder = folders + str(f)
+    download_images(url, folder, carpeta_destino)

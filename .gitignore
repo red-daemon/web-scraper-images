@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 imagenes_descargadas/
+descargas/*
 
 # C extensions
 *.so
